@@ -18,6 +18,9 @@
     - [ILogger](#ilogger)
     - [Sensible Naming and Documentation](#sensible-naming-and-documentation)
     - [Points of Interest](#points-of-interest)
+      - [Attributes / Aspects](#attributes--aspects)
+      - [Sensitive Parameters](#sensitive-parameters)
+      - [Fabric Extensions](#fabric-extensions)
 
 ## What is Logging
 
@@ -929,7 +932,7 @@ I personally chose to go down the Dependency Injection route, but either approac
 >
 > <span style="color:red">This means that you will need to ensure that end users of the class library know that they won't be able to log static classes (and obviously any static methods that they contain) with any class Library that you provide that utilises ILogger.
 >
-> <span style="color:red">You can find reference, by doing searches on the internet, to ways that you could circumvent this. This isn't the place to discuss such approaches but we will cover how to avoid automatically adding the attribute to static methods when using a Fabric to cover a project.<span>
+> <span style="color:red">You can find reference by doing searches on the internet, to ways that you could circumvent this. This isn't the place to discuss such approaches but we will cover how to avoid automatically adding the attribute to static methods when using a Fabric to cover a project.<span>
 
 ### Sensible Naming and Documentation
 
@@ -943,3 +946,21 @@ It also makes good sense to document the aspects that you create thus providing 
 ### Points of Interest
 
 With that said let's look at some of the points of Interest arising from applying some real world implementation to the basics of the simple logging discussed earlier.
+
+#### Attributes / Aspects
+
+These have been renamed so that it is abundantly clear from their names exactly what they are intended to do.
+
+#### Sensitive Parameters
+
+We had mentioned earlier that there might be some merit to having a slightly more dynamic approach to the collection of parameter names to search for and this Class Library implements one such approach.
+
+The inspiration for this came from the Documentation itself, [see here](https://doc.metalama.net/conceptual/aspects/exposing-configuration). This is not the easiest of concepts to follow but if you read the file referred to in the documentation then the additional files that you see in the repository will make sense. The ultimate goal of this is that the end user will add a text file 'Sensitive.txt' at the root of their project / solution containing names to search on an apply a redacted log entry to.
+
+#### Fabric Extensions
+
+Rather than provide a specific fabric the library instead provides a number of extension methods each of which can be called in the end user's own `Fabric.cs`. Each extension method has been named in such a way as to make it obvious what it actually does. These are worth looking at as they illustrate some of the ways in which you can configure a fabric to search out those classes and methods to which you want your attributes to be applied.
+
+It is worth noting, as we are using `ILogger` that all of the provided extension methods specifically exclude static classes from the classes that will have considered.
+
+Also note that any method named 'ToString' is also specifically excluded, this is to avoid a recursive call.
