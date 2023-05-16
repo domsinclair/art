@@ -1,1 +1,4 @@
 theme: Minima
+relative_links:
+  enabled: true
+  collections: false
