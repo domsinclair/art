@@ -164,13 +164,13 @@ namespace VtlSoftware.Metalama.Logging
 We want to log methods so we’ll have this class inherit from Metalama’s OverrideMethodAspect, which in turn will require that we actively implement the OverrideMethod() method.
 
 ```c#
-   public class LogAttribute : OverrideMethodAspect
+public class LogAttribute : OverrideMethodAspect
+{
+    public override dynamic? OverrideMethod()
     {
-        public override dynamic? OverrideMethod()
-        {
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
     }
+}
 
 ```
 
@@ -184,18 +184,18 @@ Create a new static method BuildInterpolatedString that returns a Metalama Inter
 
 ```c#
 private static InterpolatedStringBuilder BuildInterpolatedString(bool includeOutParameters)
-        {
-            var stringBuilder = new InterpolatedStringBuilder();
+{
+    var stringBuilder = new InterpolatedStringBuilder();
 
-            // Include the type and method name.
-            stringBuilder.AddText(meta.Target.Type.ToDisplayString(CodeDisplayFormat.MinimallyQualified));
-            stringBuilder.AddText(".");
-            stringBuilder.AddText(meta.Target.Method.Name);
-            stringBuilder.AddText("(");
+    // Include the type and method name.
+    stringBuilder.AddText(meta.Target.Type.ToDisplayString(CodeDisplayFormat.MinimallyQualified));
+    stringBuilder.AddText(".");
+    stringBuilder.AddText(meta.Target.Method.Name);
+    stringBuilder.AddText("(");
 
 
-            return stringBuilder;
-        }
+    return stringBuilder;
+}
 ```
 
 The most important thing to understand from what has just been added is the Metalama class meta and its member Target. In the Metalama documentation it is defined as ‘the entry point for the meta model which can be used in templates to inspect the target code or access other features of the template language’.
@@ -203,44 +203,44 @@ The most important thing to understand from what has just been added is the Meta
 In this case meta.Target will refer to the code that has the [Log] attribute added to it. The meta.Target.Type will refer to the class in which the method being logged resides and the meta.Target.Method.Name should, one hopes, be self- explanatory. Just a quick note about the CodeDisplayFormat. In it’s MinimallyQualified form we’ll get just the `<type name>.<method name>` back. If we were to opt for FullyQualified we’d get `<namespace or alias name>.<type name>.<method name>`.
 
 ```c#
-        private static InterpolatedStringBuilder BuildInterpolatedString(bool includeOutParameters)
+private static InterpolatedStringBuilder BuildInterpolatedString(bool includeOutParameters)
+{
+    var stringBuilder = new InterpolatedStringBuilder();
+
+    // Include the type and method name.
+    stringBuilder.AddText(meta.Target.Type.ToDisplayString(CodeDisplayFormat.MinimallyQualified));
+    stringBuilder.AddText(".");
+    stringBuilder.AddText(meta.Target.Method.Name);
+    stringBuilder.AddText("(");
+
+
+    // Include a placeholder for each parameter.
+    var i = meta.CompileTime(0);
+
+    foreach (var p in meta.Target.Parameters)
+    {
+        var comma = i > 0 ? ", " : "";
+
+        if (p.RefKind == RefKind.Out && !includeOutParameters)
         {
-            var stringBuilder = new InterpolatedStringBuilder();
-
-            // Include the type and method name.
-            stringBuilder.AddText(meta.Target.Type.ToDisplayString(CodeDisplayFormat.MinimallyQualified));
-            stringBuilder.AddText(".");
-            stringBuilder.AddText(meta.Target.Method.Name);
-            stringBuilder.AddText("(");
-
-
-            // Include a placeholder for each parameter.
-            var i = meta.CompileTime(0);
-
-            foreach (var p in meta.Target.Parameters)
-            {
-                var comma = i > 0 ? ", " : "";
-
-                if (p.RefKind == RefKind.Out && !includeOutParameters)
-                {
-                    // When the parameter is 'out', we cannot read the value.
-                    stringBuilder.AddText($"{comma}{p.Name} = <out> ");
-                }
-                else
-                {
-                    // Otherwise, add the parameter value.
-                    stringBuilder.AddText($"{comma}{p.Name} = /\{\{/");
-                    stringBuilder.AddExpression(p.Value);
-                    stringBuilder.AddText("}");
-                }
-
-                i++;
-            }
-
-            stringBuilder.AddText(")");
-
-            return stringBuilder;
+            // When the parameter is 'out', we cannot read the value.
+            stringBuilder.AddText($"{comma}{p.Name} = <out> ");
         }
+        else
+        {
+            // Otherwise, add the parameter value.
+            stringBuilder.AddText($"{comma}{p.Name} = /\{\{/");
+            stringBuilder.AddExpression(p.Value);
+            stringBuilder.AddText("}");
+        }
+
+        i++;
+    }
+
+    stringBuilder.AddText(")");
+
+    return stringBuilder;
+}
 ```
 
 Now that you have a basic understanding of the meta class you can probably work out for yourself exactly what is being done here. Essentially if the method has parameters we are reading through them one by one, obtaining both their name and value, and adding them to our stringBuilder. Because we can’t read the value of ‘out’ parameters those, if there are any, are being specifically excluded.
@@ -251,12 +251,12 @@ Having created a helper method to construct an informative string message contai
 
 ```c#
 public override dynamic OverrideMethod()
-        {
-            // Write entry message.
-            var entryMessage = BuildInterpolatedString(false);
-            entryMessage.AddText(" started.");
-            Console.WriteLine(entryMessage.ToValue());
-        }
+{
+    // Write entry message.
+    var entryMessage = BuildInterpolatedString(false);
+    entryMessage.AddText(" started.");
+    Console.WriteLine(entryMessage.ToValue());
+}
 
 ```
 
@@ -265,48 +265,48 @@ A try catch block will allow us to determine failure and report back on it. Our 
 
 ```c#
 public override dynamic OverrideMethod()
+{
+    // Write entry message.
+    var entryMessage = BuildInterpolatedString(false);
+    entryMessage.AddText(" started.");
+    Console.WriteLine(entryMessage.ToValue());
+
+    try
+    {
+        // Invoke the method and store the result in a variable.
+        var result = meta.Proceed();
+
+        // Display the success message. The message is different when the method is void.
+        var successMessage = BuildInterpolatedString(true);
+
+        if (meta.Target.Method.ReturnType.Is(typeof(void)))
         {
-            // Write entry message.
-            var entryMessage = BuildInterpolatedString(false);
-            entryMessage.AddText(" started.");
-            Console.WriteLine(entryMessage.ToValue());
-
-            try
-            {
-                // Invoke the method and store the result in a variable.
-                var result = meta.Proceed();
-
-                // Display the success message. The message is different when the method is void.
-                var successMessage = BuildInterpolatedString(true);
-
-                if (meta.Target.Method.ReturnType.Is(typeof(void)))
-                {
-                    // When the method is void, display a constant text.
-                    successMessage.AddText(" succeeded.");
-                }
-                else
-                {
-                    // When the method has a return value, add it to the message.
-                    successMessage.AddText(" returned ");
-                    successMessage.AddExpression(result);
-                    successMessage.AddText(".");
-                }
-
-                Console.WriteLine(successMessage.ToValue());
-
-                return result;
-            }
-            catch (Exception e)
-            {
-                // Display the failure message.
-                var failureMessage = BuildInterpolatedString(false);
-                failureMessage.AddText(" failed: ");
-                failureMessage.AddExpression(e.Message);
-                Console.WriteLine(failureMessage.ToValue());
-
-                throw;
-            }
+            // When the method is void, display a constant text.
+            successMessage.AddText(" succeeded.");
         }
+        else
+        {
+            // When the method has a return value, add it to the message.
+            successMessage.AddText(" returned ");
+            successMessage.AddExpression(result);
+            successMessage.AddText(".");
+        }
+
+        Console.WriteLine(successMessage.ToValue());
+
+        return result;
+    }
+    catch (Exception e)
+    {
+        // Display the failure message.
+        var failureMessage = BuildInterpolatedString(false);
+        failureMessage.AddText(" failed: ");
+        failureMessage.AddExpression(e.Message);
+        Console.WriteLine(failureMessage.ToValue());
+
+        throw;
+    }
+}
 
 ```
 
@@ -324,38 +324,38 @@ Now in the new console app add a new class called Calculator and within that fou
 
 ```c#
 internal static class Calculator
-    {
+{
 
-        public static double Add(double x, double y) => x + y;
-
-
-        public static double Subtract(double x, double y) => x - y;
+    public static double Add(double x, double y) => x + y;
 
 
-        public static double Divide(double x, double y) => x / y;
+    public static double Subtract(double x, double y) => x - y;
 
 
-        public  static int DivideInt(int  x, int y) => x / y;
-    }
+    public static double Divide(double x, double y) => x / y;
+
+
+    public  static int DivideInt(int  x, int y) => x / y;
+}
 ```
 
 As we have a reference to out Metalama.Logging project we can add logging to these methods really easily by the simple process of adding a [Log] attribute.
 
 ```c#
 internal static class Calculator
-    {
-        [Log]
-        public static double Add(double x, double y) => x + y;
+{
+    [Log]
+    public static double Add(double x, double y) => x + y;
 
-        [Log]
-        public static double Subtract(double x, double y) => x - y;
+    [Log]
+    public static double Subtract(double x, double y) => x - y;
 
-        [Log]
-        public static double Divide(double x, double y) => x / y;
+    [Log]
+    public static double Divide(double x, double y) => x / y;
 
-        [Log]
-        public  static int DivideInt(int  x, int y) => x / y;
-    }
+    [Log]
+    public  static int DivideInt(int  x, int y) => x / y;
+}
 
 ```
 
@@ -364,25 +364,25 @@ In Visual Studio (but only visual studio as it alone can utilise the Metalama ex
 If we look at the Add method in the new code window that has opened we can see the code that Metalama has added to our method to enable logging. Moreover if we scroll through all of the methods we can see consistent boilerplate logging code has been added to each method to which we added the [Log] attribute.
 
 ```c#
-        [Log]
-        public static double Add(double x, double y)
-        {
-            Console.WriteLine($"Calculator.Add(x = {{{x}}}, y = {{{y}}}) started.");
-            try
-            {
-                double result;
-                result = x + y;
+[Log]
+public static double Add(double x, double y)
+{
+    Console.WriteLine($"Calculator.Add(x = {{{x}}}, y = {{{y}}}) started.");
+    try
+    {
+        double result;
+        result = x + y;
 
-                Console.WriteLine($"Calculator.Add(x = {{{x}}}, y = {{{y}}}) returned {result}.");
-                return (double)result;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Calculator.Add(x = {{{x}}}, y = {{{y}}}) failed: {e.Message}");
-                throw;
-            }
+        Console.WriteLine($"Calculator.Add(x = {{{x}}}, y = {{{y}}}) returned {result}.");
+        return (double)result;
+    }
+    catch (Exception e)
+    {
+        Console.WriteLine($"Calculator.Add(x = {{{x}}}, y = {{{y}}}) failed: {e.Message}");
+        throw;
+    }
 
-        }
+}
 ```
 
 I’m sure you’ll agree that that is impressive. More to the point that’s a lot of code that you haven’t actually had to write yourself.
@@ -391,24 +391,24 @@ Let’s quickly put this to the test.
 In the program file in the main method add the following code.
 
 ```c#
-    static void Main(string[] args)
-        {
-            try
-            {
-                Calculator.Add(1, 1);
-                Calculator.Subtract(2, 1);
+static void Main(string[] args)
+{
+    try
+    {
+        Calculator.Add(1, 1);
+        Calculator.Subtract(2, 1);
 
-                // the following will report infinity as the result as we are dealing with doubles
-                Calculator.Divide(2, 0);
+        // the following will report infinity as the result as we are dealing with doubles
+        Calculator.Divide(2, 0);
 
-                //the following will report a Divide by zero exception as we're dealing with integers
-                Calculator.DivideInt(2, 0);
-            }
-            catch
-            {
+        //the following will report a Divide by zero exception as we're dealing with integers
+        Calculator.DivideInt(2, 0);
+    }
+    catch
+    {
 
-            }
-        }
+    }
+}
 ```
 
 Run the program and observe the logging sent to the console.
@@ -432,32 +432,32 @@ We’ll start by adding a new static class to our solution called Strings, to wh
 
 ```c#
 internal static class Strings
+{
+    [Log]
+    public static void Login(string username, string password)
     {
-        [Log]
-        public static void Login(string username, string password)
+         Console.WriteLine("This is the Login Method");
+    }
+}
+
+static void Main(string[] args)
+    {
+        try
         {
-            Console.WriteLine("This is the Login Method");
+            //Calculator.Add(1, 1);
+            //Calculator.Subtract(2, 1);
+
+            //// the following will report infinity as the result as we are dealing with doubles
+            //Calculator.Divide(2, 0);
+
+            ////the following will report a Divide by zero exception as we're dealing with integers
+            //Calculator.DivideInt(2, 0);
+
+            Strings.Login("dom", "mySuperSecretPassword");
+        } catch
+        {
         }
     }
-
-   static void Main(string[] args)
-        {
-            try
-            {
-                //Calculator.Add(1, 1);
-                //Calculator.Subtract(2, 1);
-
-                //// the following will report infinity as the result as we are dealing with doubles
-                //Calculator.Divide(2, 0);
-
-                ////the following will report a Divide by zero exception as we're dealing with integers
-                //Calculator.DivideInt(2, 0);
-
-                Strings.Login("dom", "mySuperSecretPassword");
-            } catch
-            {
-            }
-        }
 ```
 
 When we run this we get;
@@ -474,28 +474,28 @@ Within that we’ll add the following;
 
 ```c#
 [CompileTime]
-    internal static class SensitiveParameterFilter
+internal static class SensitiveParameterFilter
+{
+
+
+    private static readonly string[] _sensitiveNames = new[] { "password", "credential", "pwd" };
+
+    public static bool IsSensitive(IParameter parameter)
     {
-
-
-        private static readonly string[] _sensitiveNames = new[] { "password", "credential", "pwd" };
-
-        public static bool IsSensitive(IParameter parameter)
+        if(parameter.Attributes.OfAttributeType(typeof(NotLoggedAttribute)).Any())
         {
-            if(parameter.Attributes.OfAttributeType(typeof(NotLoggedAttribute)).Any())
-            {
-                return true;
-            }
-
-            if(_sensitiveNames.Any(n => parameter.Name.ToLowerInvariant().Contains(n)))
-            {
-                return true;
-            }
-
-            return false;
+            return true;
         }
 
+        if(_sensitiveNames.Any(n => parameter.Name.ToLowerInvariant().Contains(n)))
+        {
+            return true;
+        }
+
+        return false;
     }
+
+}
 ```
 
 Let’s look at what is going on here. To begin with we creating a static read only string array of what we will consider to be potential parameter names for parameters that we might wish to either avoid logging altogether or if we do log them do so in a way in which their actual value is redacted.
@@ -514,102 +514,104 @@ Next we want to make an adjustment to our LogAttribute OverirideMethod() method
 
 ```c#
 public override dynamic? OverrideMethod()
+{
+    // Write entry message.
+    var entryMessage = BuildInterpolatedString(false);
+    entryMessage.AddText(" started.");
+    Console.WriteLine(entryMessage.ToValue());
+
+    try
+    {
+        // Invoke the method and store the result in a variable.
+        var result = meta.Proceed();
+
+        // Display the success message. The message is different when the method is void.
+        var successMessage = BuildInterpolatedString(true);
+
+        if(meta.Target.Method.ReturnType.Is(typeof(void)))
         {
-            // Write entry message.
-            var entryMessage = BuildInterpolatedString(false);
-            entryMessage.AddText(" started.");
-            Console.WriteLine(entryMessage.ToValue());
-
-            try
-            {
-                // Invoke the method and store the result in a variable.
-                var result = meta.Proceed();
-
-                // Display the success message. The message is different when the method is void.
-                var successMessage = BuildInterpolatedString(true);
-
-                if(meta.Target.Method.ReturnType.Is(typeof(void)))
-                {
-                    // When the method is void, display a constant text.
-                    successMessage.AddText(" succeeded.");
-                } else
-                {
-                    // When the method has a return value, add it to the message.
-                    successMessage.AddText(" returned ");
-
-                    //check to see if we are dealing with sensitive data
-                    if (SensitiveParameterFilter.IsSensitive(meta.Target.Method.ReturnParameter))
-                    {
-                        successMessage.AddText("<redacted>");
-                    }
-                    else
-                    {
-                        successMessage.AddExpression(result);
-                    }
-
-                    successMessage.AddText(".");
-                }
-
-                Console.WriteLine(successMessage.ToValue());
-
-                return result;
-            } catch(Exception e)
-            {
-                // Display the failure message.
-                var failureMessage = BuildInterpolatedString(false);
-                failureMessage.AddText(" failed: ");
-                failureMessage.AddExpression(e.Message);
-                Console.WriteLine(failureMessage.ToValue());
-
-                throw;
-            }
+            // When the method is void, display a constant text.
+            successMessage.AddText(" succeeded.");
         }
+        else
+        {
+            // When the method has a return value, add it to the message.
+            successMessage.AddText(" returned ");
+
+            //check to see if we are dealing with sensitive data
+            if (SensitiveParameterFilter.IsSensitive(meta.Target.Method.ReturnParameter))
+            {
+                successMessage.AddText("<redacted>");
+            }
+            else
+            {
+                successMessage.AddExpression(result);
+            }
+
+            successMessage.AddText(".");
+        }
+
+        Console.WriteLine(successMessage.ToValue());
+
+        return result;
+    } catch(Exception e)
+    {
+        // Display the failure message.
+        var failureMessage = BuildInterpolatedString(false);
+        failureMessage.AddText(" failed: ");
+        failureMessage.AddExpression(e.Message);
+        Console.WriteLine(failureMessage.ToValue());
+
+        throw;
+    }
+}
 ```
 
 To finish off we also need to make a small adjustment to our BuildInterpolatedString method to take our new IsSensitive Boolean into consideration.
 
 ```c#
-   private static InterpolatedStringBuilder BuildInterpolatedString(bool includeOutParameters)
+private static InterpolatedStringBuilder BuildInterpolatedString(bool includeOutParameters)
+{
+    var stringBuilder = new InterpolatedStringBuilder();
+
+    // Include the type and method name.
+    stringBuilder.AddText(meta.Target.Type.ToDisplayString(CodeDisplayFormat.MinimallyQualified));
+    stringBuilder.AddText(".");
+    stringBuilder.AddText(meta.Target.Method.Name);
+    stringBuilder.AddText("(");
+
+    // Include a placeholder for each parameter.
+    var i = meta.CompileTime(0);
+
+    foreach(var p in meta.Target.Parameters)
+    {
+        var comma = i > 0 ? ", " : string.Empty;
+
+        if(SensitiveParameterFilter.IsSensitive(p))
         {
-            var stringBuilder = new InterpolatedStringBuilder();
-
-            // Include the type and method name.
-            stringBuilder.AddText(meta.Target.Type.ToDisplayString(CodeDisplayFormat.MinimallyQualified));
-            stringBuilder.AddText(".");
-            stringBuilder.AddText(meta.Target.Method.Name);
-            stringBuilder.AddText("(");
-
-            // Include a placeholder for each parameter.
-            var i = meta.CompileTime(0);
-
-            foreach(var p in meta.Target.Parameters)
-            {
-                var comma = i > 0 ? ", " : string.Empty;
-
-                if(SensitiveParameterFilter.IsSensitive(p))
-                {
-                    // Do not log sensitive parameters.
-                    stringBuilder.AddText($"{comma}{p.Name} = <redacted> ");
-                }
-                else if(p.RefKind == RefKind.Out && !includeOutParameters)
-                {
-                    // When the parameter is 'out', we cannot read the value.
-                    stringBuilder.AddText($"{comma}{p.Name} = <out> ");
-                } else
-                {
-                    // Otherwise, add the parameter value.
-                    stringBuilder.AddText($"{comma}{p.Name} = /\{\{/");
-                    stringBuilder.AddExpression(p.Value);
-                    stringBuilder.AddText("}");
-                }
-
-                i++;
-            }
-
-            stringBuilder.AddText(")");
-
-            return stringBuilder;
+            // Do not log sensitive parameters.
+            stringBuilder.AddText($"{comma}{p.Name} = <redacted> ");
         }
+        else if(p.RefKind == RefKind.Out && !includeOutParameters)
+        {
+            // When the parameter is 'out', we cannot read the value.
+            stringBuilder.AddText($"{comma}{p.Name} = <out> ");
+        }
+        else
+        {
+            // Otherwise, add the parameter value.
+            stringBuilder.AddText($"{comma}{p.Name} = /\{\{/");
+            stringBuilder.AddExpression(p.Value);
+            stringBuilder.AddText("}");
+        }
+
+        i++;
+    }
+
+    stringBuilder.AddText(")");
+
+    return stringBuilder;
+}
 ```
 
 Rebuild the Metalama.Logging project.
@@ -618,40 +620,41 @@ Return to the console project and amend the Strings class and the main method an
 
 ```c#
 internal static class Strings
-    {
+{
 
 
-        [Log]
-        public static void Login(string username, string password) { Console.WriteLine("This is the Login Method"); }
+    [Log]
+    public static void Login(string username, string password) { Console.WriteLine("This is the Login Method"); }
 
-        [Log]
-        public static void MyNewLogin(string username, [NotLogged] string secret)
-        { }
+    [Log]
+    public static void MyNewLogin(string username, [NotLogged] string secret)
+    { }
 
 
-    }
+}
 ```
 
 ```c#
 static void Main(string[] args)
-        {
-            try
-            {
-                //Calculator.Add(1, 1);
-                //Calculator.Subtract(2, 1);
+{
+    try
+    {
+        //Calculator.Add(1, 1);
+        //Calculator.Subtract(2, 1);
 
-                //// the following will report infinity as the result as we are dealing with doubles
-                //Calculator.Divide(2, 0);
+        //// the following will report infinity as the result as we are dealing with doubles
+        //Calculator.Divide(2, 0);
 
-                ////the following will report a Divide by zero exception as we're dealing with integers
-                //Calculator.DivideInt(2, 0);
+        ////the following will report a Divide by zero exception as we're dealing with integers
+        //Calculator.DivideInt(2, 0);
 
-                Strings.Login("dom", "mySuperSecretPassword");
-                Strings.MyNewLogin("dom", "mySuperSecret");
-            } catch
-            {
-            }
-        }
+        Strings.Login("dom", "mySuperSecretPassword");
+        Strings.MyNewLogin("dom", "mySuperSecret");
+    }
+    catch
+    {
+    }
+}
 
 ```
 
@@ -670,18 +673,18 @@ As luck would have it there is. Metalama has a little magic trick up it’s slee
 Return to your Metalama.Logging solution and add a class called Fabric to it containing the following code.
 
 ```c#
-   public class Fabric : TransitiveProjectFabric
+public class Fabric : TransitiveProjectFabric
+{
+    public override void AmendProject(IProjectAmender amender)
     {
-        public override void AmendProject(IProjectAmender amender)
-        {
-            amender.Outbound
-            .SelectMany(compilation => compilation.AllTypes)
-            .Where(type => type.Accessibility is Accessibility.Public or Accessibility.Internal)
-            .SelectMany(type => type.Methods)
-            .Where(method => method.Accessibility == Accessibility.Public && method.Name != "ToString")
-            .AddAspectIfEligible<LogAttribute>();
-        }
+        amender.Outbound
+        .SelectMany(compilation => compilation.AllTypes)
+        .Where(type => type.Accessibility is Accessibility.Public or Accessibility.Internal)
+        .SelectMany(type => type.Methods)
+        .Where(method => method.Accessibility == Accessibility.Public && method.Name != "ToString")
+        .AddAspectIfEligible<LogAttribute>();
     }
+}
 ```
 
 There’s quite a lot going on here and it will pay us to discuss it in a little more detail.
@@ -719,73 +722,77 @@ In the Metalama.Logging project create a new class called TimedLogAttribute whic
 With that done we’ll make a couple of small changes to our new TimedLogAttribute.
 
 ```c#
-  public class TimedLogAttribute : OverrideMethodAspect
+public class TimedLogAttribute : OverrideMethodAspect
+{
+
+    public override dynamic OverrideMethod()
     {
+        // Write entry message.
+        var entryMessage = LogHelpers.BuildInterpolatedString(false);
+        entryMessage.AddText(" started.");
+        Console.WriteLine(entryMessage.ToValue());
 
-        public override dynamic OverrideMethod()
+        //add a means to time the method's execution
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        try
         {
-            // Write entry message.
-            var entryMessage = LogHelpers.BuildInterpolatedString(false);
-            entryMessage.AddText(" started.");
-            Console.WriteLine(entryMessage.ToValue());
+            // Invoke the method and store the result in a variable.
+            var result = meta.Proceed();
 
-            //add a means to time the method's execution
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            // Display the success message. The message is different when the method is void.
+            var successMessage = LogHelpers.BuildInterpolatedString(true);
 
-            try
+            if(meta.Target.Method.ReturnType.Is(typeof(void)))
             {
-                // Invoke the method and store the result in a variable.
-                var result = meta.Proceed();
+                // When the method is void, display a constant text.
+                successMessage.AddText(" succeeded.");
+            }
+            else
+            {
+                // When the method has a return value, add it to the message.
+                successMessage.AddText(" returned ");
 
-                // Display the success message. The message is different when the method is void.
-                var successMessage = LogHelpers.BuildInterpolatedString(true);
-
-                if(meta.Target.Method.ReturnType.Is(typeof(void)))
+                //check to see if we are dealing with sensitive data
+                if(SensitiveParameterFilter.IsSensitive(meta.Target.Method.ReturnParameter))
                 {
-                    // When the method is void, display a constant text.
-                    successMessage.AddText(" succeeded.");
-                } else
+                    successMessage.AddText("<redacted>");
+                }
+                else
                 {
-                    // When the method has a return value, add it to the message.
-                    successMessage.AddText(" returned ");
-
-                    //check to see if we are dealing with sensitive data
-                    if(SensitiveParameterFilter.IsSensitive(meta.Target.Method.ReturnParameter))
-                    {
-                        successMessage.AddText("<redacted>");
-                    } else
-                    {
-                        successMessage.AddExpression(result);
-                    }
+                    successMessage.AddExpression(result);
+                }
 
                     successMessage.AddText(".");
                 }
 
-                Console.WriteLine(successMessage.ToValue());
+            Console.WriteLine(successMessage.ToValue());
 
-                return result;
-            } catch(Exception e)
-            {
-                // Display the failure message.
-                var failureMessage = LogHelpers.BuildInterpolatedString(false);
-                failureMessage.AddText(" failed: ");
-                failureMessage.AddExpression(e.Message);
-                Console.WriteLine(failureMessage.ToValue());
+            return result;
+        }
+        catch(Exception e)
+        {
+            // Display the failure message.
+            var failureMessage = LogHelpers.BuildInterpolatedString(false);
+            failureMessage.AddText(" failed: ");
+            failureMessage.AddExpression(e.Message);
+            Console.WriteLine(failureMessage.ToValue());
 
-                throw;
-            } finally
-            {
-                //we need to know how long all of this took
-                stopwatch.Stop();
-                var elapsedMessage = LogHelpers.BuildInterpolatedString(false);
-                elapsedMessage.AddText(" elapsed: ");
-                elapsedMessage.AddExpression(stopwatch.ElapsedMilliseconds);
-                elapsedMessage.AddText("ms");
-                Console.WriteLine(elapsedMessage.ToValue());
-            }
+            throw;
+        }
+        finally
+        {
+            //we need to know how long all of this took
+            stopwatch.Stop();
+            var elapsedMessage = LogHelpers.BuildInterpolatedString(false);
+            elapsedMessage.AddText(" elapsed: ");
+            elapsedMessage.AddExpression(stopwatch.ElapsedMilliseconds);
+            elapsedMessage.AddText("ms");
+            Console.WriteLine(elapsedMessage.ToValue());
         }
     }
+}
 
 ```
 
@@ -795,13 +802,13 @@ In reality we don’t want everything to be timed so let’s make a slight adjus
 Add the following method to the LogAttribute Class.
 
 ```c#
-   public override void BuildAspect(IAspectBuilder<IMethod> builder)
-        {
-            if(!builder.Target.Attributes.OfAttributeType(typeof(TimedLogAttribute)).Any())
-            {
-                    builder.Advice.Override(builder.Target, nameof(this.OverrideMethod));
-            }
-        }
+public override void BuildAspect(IAspectBuilder<IMethod> builder)
+{
+    if(!builder.Target.Attributes.OfAttributeType(typeof(TimedLogAttribute)).Any())
+    {
+            builder.Advice.Override(builder.Target, nameof(this.OverrideMethod));
+    }
+}
 
 ```
 
@@ -818,46 +825,47 @@ Thus far we have been concentrating our efforts on producing comprehensive logs 
 Lets amend our BuildAspect method in the LogAttribute Class.
 
 ```c#
-   public override void BuildAspect(IAspectBuilder<IMethod> builder)
+public override void BuildAspect(IAspectBuilder<IMethod> builder)
+{
+    if (!builder.Target.Attributes.OfAttributeType(typeof(TimedLogAttribute)).Any())
+    {
+        if (builder.Target.Compilation.Project.Configuration == "Debug")
         {
-            if (!builder.Target.Attributes.OfAttributeType(typeof(TimedLogAttribute)).Any())
-            {
-                if (builder.Target.Compilation.Project.Configuration == "Debug")
-                {
-                    builder.Advice.Override(builder.Target, nameof(this.OverrideMethod));
-                }
-                else
-                {
-                    builder.Advice.Override(builder.Target, nameof(this.CondensedOverrideMethod));
-                }
-            }
+            builder.Advice.Override(builder.Target, nameof(this.OverrideMethod));
         }
+        else
+        {
+            builder.Advice.Override(builder.Target, nameof(this.CondensedOverrideMethod));
+        }
+    }
+}
 
 ```
 
 Notice that we are now adding an additional condition to check for the actual build configuration. If it’s a debug build we’ll go on to use the original OverrideMethod to add the code we want added to log in detail, but if it’s release we use an alternative method to provide some slimmed down logging.
 
-```c~
+```c#
 [Template]
-        public dynamic CondensedOverrideMethod()
-        {
+public dynamic CondensedOverrideMethod()
+{
 
-            try
-            {
-                // Invoke the method and store the result in a variable.
-                var result = meta.Proceed();
-                return result;
-            } catch(Exception e)
-            {
-                // Display the failure message.
-                var failureMessage = LogHelpers.BuildInterpolatedString(false);
-                failureMessage.AddText(" failed: ");
-                failureMessage.AddExpression(e.Message);
-                Console.WriteLine(failureMessage.ToValue());
+    try
+    {
+        // Invoke the method and store the result in a variable.
+        var result = meta.Proceed();
+        return result;
+    }
+    catch(Exception e)
+    {
+        // Display the failure message.
+        var failureMessage = LogHelpers.BuildInterpolatedString(false);
+        failureMessage.AddText(" failed: ");
+        failureMessage.AddExpression(e.Message);
+        Console.WriteLine(failureMessage.ToValue());
 
-                throw;
-            }
-        }
+        throw;
+    }
+}
 
 ```
 
@@ -908,16 +916,16 @@ Using `ILogger` will require a reference to it in every single class that we wan
 The first is manually. That would require that we add, at the very least, the following to each and every class that we create.
 
 ```c#
-   internal class TestClass
+internal class TestClass
+{
+    private readonly ILogger<TestClass> logger;
+
+    public TestClass(ILogger<TestClass> logger)
     {
-        private readonly ILogger<TestClass> logger;
-
-        public TestClass(ILogger<TestClass> logger)
-        {
-            this.logger = logger;
-        }
-
+        this.logger = logger;
     }
+
+}
 ```
 
 This implies that we would probably need some sort of check that this is present at the point that we add our [Log] attribute to provide logging.
