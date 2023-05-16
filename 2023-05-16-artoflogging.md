@@ -897,7 +897,7 @@ If you want a slightly more down to earth explanation of what it is and why it's
 
 In essence what ILogger brings to the table is both a way to make use of some extensive logging capabilities that Microsoft has itself already baked into .Net but it rather neatly opens to door for you, the developer, to then substitute a logging Framework of your own choice to provide logging, opening up the possibility of logging to a range of different places and also creating structured logs.
 
-> <span style="color:yellow">It should be noted that Microsoft's ILogger does itself provide structured logging but in reality providers like [Serilog](https://serilog.net/) tend to do it a litter more comprehensively.<span>
+> <span style="color:red">It should be noted that Microsoft's ILogger does itself provide structured logging but in reality providers like [Serilog](https://serilog.net/) tend to do it a litter more comprehensively.<span>
 
 Using `Ilogger` will require a reference to it in every single class that we want to log. There are basically two ways of doing this.
 
@@ -924,7 +924,7 @@ There are two good basic examples of how to do this in the [MetaLama Samples](ht
 
 I personally chose to go down the Dependency Injection route, but either approach is perfectly acceptable.
 
-> <span style="color:yellow">There is one point that you should note carefully. ILogger can't be used in Static Classes as they don't have a constructor and by extension no means to introduce the ILogger, either manually or via Dependency Injection.<span><br>
+> <span style="color:red">There is one point that you should note carefully. ILogger can't be used in Static Classes as they don't have a constructor and by extension no means to introduce the ILogger, either manually or via Dependency Injection.<span><br>
 >
 > <span style="color:yellow">This means that you will need to ensure that end users of the class library know that they won't be able to log static classes (and obviously any static methods that they contain) with any class Library that you provide that utilises ILogger.<span>
 >
