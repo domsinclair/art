@@ -927,9 +927,9 @@ I personally chose to go down the Dependency Injection route, but either approac
 
 > <span style="color:red">There is one point that you should note carefully. ILogger can't be used in Static Classes as they don't have a constructor and by extension no means to introduce the ILogger, either manually or via Dependency Injection.<span><br>
 >
-> <span style="color:yellow">This means that you will need to ensure that end users of the class library know that they won't be able to log static classes (and obviously any static methods that they contain) with any class Library that you provide that utilises ILogger.<span>
+> <span style="color:red">This means that you will need to ensure that end users of the class library know that they won't be able to log static classes (and obviously any static methods that they contain) with any class Library that you provide that utilises ILogger.<span>
 >
-> <span style="color:yellow">You can find reference, by doing searhes on the internet, to ways that you could circumvent this. This isn't the place to discuss such approaches but we will cover how to avoid automatically adding the attribute to static methods when using a Fabric to cover a project.<span>
+> <span style="color:red">You can find reference, by doing searhes on the internet, to ways that you could circumvent this. This isn't the place to discuss such approaches but we will cover how to avoid automatically adding the attribute to static methods when using a Fabric to cover a project.<span>
 
 ### Sensible Naming and Documentation
 
