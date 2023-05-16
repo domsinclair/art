@@ -177,7 +177,7 @@ At this point well take a slight diversion and create a helper method that will 
 
 ### An Interpolated String Builder
 
-Create a new static method BuildInterpolatedString that returns a Metalama InterpolatedStringBuider. In its most basic form it will look like this;
+Create a new static method BuildInterpolatedString that returns a Metalama InterpolatedStringBuilder. In its most basic form it will look like this;
 
 ```c#
 private static InterpolatedStringBuilder BuildInterpolatedString(bool includeOutParameters)
@@ -197,7 +197,7 @@ private static InterpolatedStringBuilder BuildInterpolatedString(bool includeOut
 
 The most important thing to understand from what has just been added is the Metalama class meta and its member Target. In the Metalama documentation it is defined as ‘the entry point for the meta model which can be used in templates to inspect the target code or access other features of the template language’.
 
-In this case meta.Target will refer to the code that has the [Log] attribute added to it. The meta.Target.Type will refer to the class in which the method being logged resides and the meta.Target.Method.Name should, one hopes, be self- explanatory. Just a quick note about the CodeDisplayFormat. In it’s MinimallyQualified form we’ll get just the `<type name>.<method name>` back. If we were to opt for FullyQuallified we’d get `<namespace or alias name>.<type name>.<method name>`.
+In this case meta.Target will refer to the code that has the [Log] attribute added to it. The meta.Target.Type will refer to the class in which the method being logged resides and the meta.Target.Method.Name should, one hopes, be self- explanatory. Just a quick note about the CodeDisplayFormat. In it’s MinimallyQualified form we’ll get just the `<type name>.<method name>` back. If we were to opt for FullyQualified we’d get `<namespace or alias name>.<type name>.<method name>`.
 
 ```c#
         private static InterpolatedStringBuilder BuildInterpolatedString(bool includeOutParameters)
@@ -563,7 +563,7 @@ public override dynamic? OverrideMethod()
         }
 ```
 
-To finish off we also need to make a small adjustment to our BuildInterpolatedString method to take our new IsSensitve Boolean into consideration.
+To finish off we also need to make a small adjustment to our BuildInterpolatedString method to take our new IsSensitive Boolean into consideration.
 
 ```c#
    private static InterpolatedStringBuilder BuildInterpolatedString(bool includeOutParameters)
@@ -711,7 +711,7 @@ There are occasions when knowing just how long it’s taking for something to ha
 
 This is, arguably, something that the developer writing the code in the first place ought to know and therefore it’s reasonable to argue that asking them to specifically add an attribute to that one piece of code is not really that onerous a job. Given that we’ll create a separate logging aspect to providing a record of how long a method took to run, as well as all the other information we are currently collecting.
 
-In the Metalama.Logging project create a new class called TimedLogAttribute which, just as with the original LogAttribute, will inherit from OverrideMethodAspect. To start with copy and paste the code inside your Log Attribute to this class (omitting the interpolatedStringBuilder). You’ll see an immediate error with the call to BuilInterpolatedString which we’ll rectify by moving that method to a static helper class so that we don’t have to constantly repeat it. You’ll need to decorate your helper class with the [CompileTime] attribute.
+In the Metalama.Logging project create a new class called TimedLogAttribute which, just as with the original LogAttribute, will inherit from OverrideMethodAspect. To start with copy and paste the code inside your Log Attribute to this class (omitting the interpolatedStringBuilder). You’ll see an immediate error with the call to BuildInterpolatedString which we’ll rectify by moving that method to a static helper class so that we don’t have to constantly repeat it. You’ll need to decorate your helper class with the [CompileTime] attribute.
 
 With that done we’ll make a couple of small changes to our new TimedLogAttribute.
 
@@ -900,7 +900,7 @@ In essence what ILogger brings to the table is both a way to make use of some ex
 
 > <span style="color:red">It should be noted that Microsoft's ILogger does itself provide structured logging but in reality providers like [Serilog](https://serilog.net/) tend to do it a litter more comprehensively.<span>
 
-Using `Ilogger` will require a reference to it in every single class that we want to log. There are basically two ways of doing this.
+Using `ILogger` will require a reference to it in every single class that we want to log. There are basically two ways of doing this.
 
 The first is manually. That would require that we add, at the very least, the following to each and every class that we create.
 
