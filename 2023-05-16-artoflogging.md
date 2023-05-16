@@ -90,6 +90,7 @@ public decimal Divide (int a, int b)
   Console.WriteLine($"Leaving the Divide Method, with the following result: {result}.");
  }
 }
+```
 
 This produces the following;
 
