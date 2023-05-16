@@ -6,6 +6,6 @@ Created by SharpCrafters s.r.o., metalama is perhaps best described as the next 
 
 Providing a brief and succinct definition of AOP is to say the least difficult. let's just say that it's an almost magical way of taking the pain out of writing the endless boiler plate code that all developers find themselves having to write in order to provide the functionality that so many applications require almost by default.
 
-## [The Art of Logging](/artoflogging.md)
+## [The Art of Logging](index.md/artoflogging.md)
 
 A document describing how Metalama can make the whole process of logging applications both easier and dare I say it, fun!
