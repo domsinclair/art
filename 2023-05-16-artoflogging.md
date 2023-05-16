@@ -594,7 +594,7 @@ To finish off we also need to make a small adjustment to our BuildInterpolatedSt
                 } else
                 {
                     // Otherwise, add the parameter value.
-                    stringBuilder.AddText($"{comma}{p.Name} = {{");
+                    stringBuilder.AddText($"{comma}{p.Name} = /\{\{/");
                     stringBuilder.AddExpression(p.Value);
                     stringBuilder.AddText("}");
                 }
