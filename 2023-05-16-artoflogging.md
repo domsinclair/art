@@ -225,7 +225,7 @@ In this case meta.Target will refer to the code that has the [Log] attribute add
                 else
                 {
                     // Otherwise, add the parameter value.
-                    stringBuilder.AddText($"{comma}{p.Name} = {{");
+                    stringBuilder.AddText($"{comma}{p.Name} = /\{\{/");
                     stringBuilder.AddExpression(p.Value);
                     stringBuilder.AddText("}");
                 }
