@@ -78,7 +78,7 @@ Leaving the Divide Method.
 
 That’s probably added another minute of additional work to my method. Now it would probably be useful to know what parameters are actually being passed to this method and also what result is being returned. Time to adjust our method once again.
 
-````c#
+```c#
 public decimal Divide (int a, int b)
 {
  Console.WriteLine($"Entering the Divide Method, with the following parameters; a = {a} and b = {b}.");
@@ -100,8 +100,8 @@ This produces the following;
 Entering the Divide Method, with the following parameters; a = 2 and b = 1.
 Leaving the Divide Method, with the following result 2.
 
-Now that’s much more informative but we’ve had to add a variable to contain the result so that we could report it and rejig out two WriteLine statements.  Probably another couple of minutes used up.
-There’s still and obvious flaw though that we haven’t covered, suppose the method throws an error. We will need to know about that.  Time for some more alterations.
+Now that’s much more informative but we’ve had to add a variable to contain the result so that we could report it and rejig out two WriteLine statements. Probably another couple of minutes used up.
+There’s still and obvious flaw though that we haven’t covered, suppose the method throws an error. We will need to know about that. Time for some more alterations.
 
 ```c#
 public decimal Divide (int a, int b)
@@ -124,7 +124,7 @@ public decimal Divide (int a, int b)
   Console.WriteLine($"Leaving the Divide Method. with the following result: {result}.");
  }
 }
-````
+```
 
 Now id we contrive a divide by zero exception by passing in 2 and 0 as parameters we get the following;
 
