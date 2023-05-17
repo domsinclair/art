@@ -969,6 +969,83 @@ The inspiration for this came from the Documentation itself, [see here](https://
 
 Rather than provide a specific fabric the library instead provides a number of extension methods each of which can be called in the end user's own `Fabric.cs`. Each extension method has been named in such a way as to make it obvious what it actually does. These are worth looking at as they illustrate some of the ways in which you can configure a fabric to search out those classes and methods to which you want your attributes to be applied.
 
-It is worth noting, as we are using `ILogger` that all of the provided extension methods specifically exclude static classes from the classes that will have considered.
+It is worth noting, as we are using `ILogger` that all of the provided extension methods specifically exclude static classes from the classes that will have considered. You can see that this is specifically stated in the comments for each method, and done this way that remark will appear in intellisense as well when the ned user gets to call your extension method.
 
 Also note that any method named 'ToString' is also specifically excluded, this is to avoid a recursive call.
+
+```c#
+ ///---- LogAllMethods   (Method) ----
+///
+/// <summary>
+/// An IProjectAmender extension method that logs all methods.
+/// </summary>
+///
+/// <remarks>Specifically excludes methods from Static classes.</remarks>
+///
+/// <param name="amender">The amender to act on.</param>
+///-------------------------------------------------------------------------------------------------
+
+public static void LogAllMethods(this IProjectAmender amender)
+{
+    amender.Outbound
+    .SelectMany(compilation => compilation.AllTypes)
+    .Where(type => !type.IsStatic)
+    .SelectMany(type => type.Methods)
+    .Where(method => method.Name != "ToString")
+    .AddAspectIfEligible<LogMethodAttribute>();
+}
+
+///---- LogAllPublicAndPrivateMethods   (Method) ----
+///
+/// <summary>
+/// An IProjectAmender extension method that logs all public and private methods.
+/// </summary>
+///
+/// <remarks>Specifically excludes methods from Static classes.</remarks>
+///
+/// <param name="amender">The amender to act on.</param>
+///-------------------------------------------------------------------------------------------------
+
+public static void LogAllPublicAndPrivateMethods(this IProjectAmender amender)
+{
+    amender.Outbound
+    .SelectMany(compilation => compilation.AllTypes)
+    .Where(type => type.Accessibility is Accessibility.Public or Accessibility.Internal && !type.IsStatic)
+    .SelectMany(type => type.Methods)
+    .Where(method => method.Accessibility is Accessibility.Public or Accessibility.Private &&method.Name != "ToString")
+    .AddAspectIfEligible<LogMethodAttribute>();
+}
+
+///---- LogAllPublicMethods   (Method) ----
+///
+/// <summary>
+/// An IProjectAmender extension method that logs all public methods.
+/// </summary>
+///
+/// <remarks>Specifically excludes methods from Static classes.</remarks>
+///
+/// <param name="amender">The amender to act on.</param>
+///-------------------------------------------------------------------------------------------------
+
+public static void LogAllPublicMethods(this IProjectAmender amender)
+{
+    amender.Outbound
+    .SelectMany(compilation => compilation.AllTypes)
+    .Where(type => type.Accessibility is Accessibility.Public or Accessibility.Internal && !type.IsStatic)
+    .SelectMany(type => type.Methods)
+    .Where(method => method.Accessibility is Accessibility.Public && method.Name != "ToString")
+    .AddAspectIfEligible<LogMethodAttribute>();
+}
+```
+
+This will allow your end user to create their own Fabric.cs class and either use one of your extensions or alternatively create their own fabric from scratch.
+
+```c#
+internal class Fabric : ProjectFabric
+{
+    public override void AmendProject(IProjectAmender amender)
+    {
+        amender.LogAllPublicMethods();
+    }
+}
+```
