@@ -1115,4 +1115,4 @@ Finally you'll find a simple console application to test the log Aspect and igf 
 
 > Note that you will need to reimplement certain usings depending upon which you choose to use.
 
-The console application also demonstrates configuring Serilog Via an external appsettings.json file.
+The console application also demonstrates configuring Serilog via an external appsettings.json file.
