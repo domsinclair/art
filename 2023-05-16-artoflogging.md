@@ -21,6 +21,10 @@
       - [Attributes / Aspects](#attributes--aspects)
       - [Sensitive Parameters](#sensitive-parameters)
       - [Fabric Extensions](#fabric-extensions)
+  - [Structured Logging](#structured-logging)
+    - [A small problem](#a-small-problem)
+    - [Log Levels](#log-levels)
+    - [A working example](#a-working-example)
 
 ## What is Logging
 
@@ -1049,3 +1053,66 @@ internal class Fabric : ProjectFabric
     }
 }
 ```
+
+## Structured Logging
+
+Now the time has come to look at structured logging.
+
+Up to now the information that we've been getting back has just been plain text. It's readable, it's informative but it's a nightmare to actually search efficiently and when it comes to interrogating to find out if there's a problem or where the problem is or derives from then the ability to search those logs efficiently really comes into its own.
+
+Essentially structured logging generates logs in more easily parsable formats such as XML or JSON. Logs become easier to query, filter or group and accordingly the information that can be derived from them is greatly enhanced. Structured logs are basically [Structured Data](https://github.com/serilog/serilog/wiki/Structured-Data?)
+
+What we would like to be able to do though is provide ourselves with a choice to either output text based logs easily readable in the console or fully structured logs that we can easily iterate over in something like [SEQ](https://datalust.co/seq). We've seen how easy it is to implement the ILogger interface with Metalama and the vast majority of Logging frameworks can make use of that basic implementation by way of simply swapping the logging framework provide during application startup.
+
+### A small problem
+
+Unfortunately though there is one small problem that needs to be looked at. Up until now we have been making use of an Interpolated String Builder to produce the entries that get logged.
+
+This is ideal for text based stuff but if we want to really gain from structured logging then we need the actual values that the entries are referring to and that means using a formatted string rather than an interpolated one. This suggests that we will probably need to provide a different logging aspect for each logging framework that we want to support and indeed that is precisely what PostSharp has done in the past with its different logging provider backends.
+
+It would be great if a way could be found to satisfy the requirements of both at the same time.
+
+Well it turns out that there is a way to do this and it comes to us by way of the [InterpolatedStringHandler](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-10.0/improved-interpolated-strings) a new feature of C# 10. There are a few articles to be found on this new feature and the one that really opened my eyes to the possibility was [this one](https://habr.com/en/articles/591171/). The concept is, like all the best ideas are, simple. Take and interpolated string, a feature that developers are now all too familiar with and use more often than `string.Format()` but handle it as if it was a formatted string. Now we have the possibility of creating log messages that will work well as text and equally well as structured data. Combine this with the ease with which we know we can use the `ILogger` interface and we our goal of one logging aspect that can be used with any logging framework, structured or not, is a very real possibility.
+
+Credit where credit is due. Pahan Menski has come up with a very straightforward way to adapting the InterpolatedStringHandler to the ILogger interface. Essentially this is done by creating an Interpolated String Handler for each type of Log entry supported by the Microsoft Extensions Logging ILogger and once that has been done a number of extension methods for the actual message creation that will call these handlers to produce the log entries. Now we can create an interpolated string based message but have the handler provide a text interpretation that can support structured data.
+
+I chose to follow the example presented in the blog post and use T4 text templates to construct the handlers and extension methods. Whilst not strictly necessary this method of working has the advantage od producing well formatted code quickly and easily and eliminates the very real possibility of introducing the small but inevitable typos that so often get into code that has to be written over and over again with small but subtle variations.
+
+### Log Levels
+
+Logging Frameworks assign their messages to certain prescribed levels. By doing this it is easier for the reader of those logs to determine what is actually going on and crucially, they provide a means of very quickly filtering what messages actually get written to a log in a production application.
+
+The Microsoft ILogger has six log levels (provided via an enumeration) which are:
+
+0. Trace
+1. Debug
+2. Information
+3. Warning
+4. Error
+5. Critical
+6. None
+
+Logging Frameworks that extend the ILogger tend to emulate these levels, but occasionally with different names. Serlog for example has the following;
+
+0. Verbose
+1. Debug
+2. Information
+3. Warning
+4. Error
+5. Fatal
+
+Essentially the same as ILogger but with a slight change in name for the first and last. In fact internally Serilog maps the two but we do need to be aware of the differences particularly when configuring the actual framework that we intend to use.
+
+### A working example
+
+So much for the theory what about putting it into practice. You can find a working example of using an Interpolated StringHandler with a Metalama Log aspect in one of my GitHub repositories [here](https://github.com/domsinclair/VtlSoftware.LoggingWithStringHandler).
+
+In the repository there is a simple proof of concept example based on the Tutorial that Microsoft themselves provide in their own documentation about this new C# feature. There is also a more detailed example proof of concept (very much based on the excellent work done by Pahan Menski) which uses a log aspect written with Metalama.
+
+The Log Aspect itself should be pretty familiar to you by now but it is worth pointing out that you'll not see the InterpolatedStringBuilder being used. Instead we are creating interpolated string messages within the aspect itself and then using one of the provided log extension methods to write out the message.
+
+Finally you'll find a simple console application to test the log Aspect and igf you look in the static main method there are implementations provided to write logs using either the Microsoft ILogger or Serilog.
+
+> Note that you will need to reimplement certain usings depending upon which you choose to use.
+
+The console application also demonstrates configuring Serilog Via an external appsettings.json file.
