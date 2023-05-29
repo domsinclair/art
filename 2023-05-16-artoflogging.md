@@ -25,6 +25,9 @@
     - [A small problem](#a-small-problem)
     - [Log Levels](#log-levels)
     - [A working example](#a-working-example)
+    - [Configuring Serilog via 'appsettings.json'](#configuring-serilog-via-appsettingsjson)
+      - [Adding the appsettings.json](#adding-the-appsettingsjson)
+      - [The Serilog section in the 'appsettings.json' file](#the-serilog-section-in-the-appsettingsjson-file)
 
 ## What is Logging
 
@@ -1111,8 +1114,85 @@ In the repository there is a simple proof of concept example based on the Tutori
 
 The Log Aspect itself should be pretty familiar to you by now but it is worth pointing out that you'll not see the InterpolatedStringBuilder being used. Instead we are creating interpolated string messages within the aspect itself and then using one of the provided log extension methods to write out the message.
 
-Finally you'll find a simple console application to test the log Aspect and igf you look in the static main method there are implementations provided to write logs using either the Microsoft ILogger or Serilog.
+Finally you'll find a simple console application to test the log aspect and if you look in the static main method there are implementations provided to write logs using either the Microsoft ILogger or Serilog.
 
 > Note that you will need to reimplement certain usings depending upon which you choose to use.
 
-The console application also demonstrates configuring Serilog via an external appsettings.json file.
+The console application also demonstrates configuring Serilog via an external `appsettings.json` file.
+
+### Configuring Serilog via 'appsettings.json'
+
+It would be remiss not to mention in passing the benefits to be gained from actually configuring Serilog via an external configuration file and to look at how we might do that.
+
+The first and most obvious benefit is the fact that you can actively change the configuration settings in a runtime production environment. This provides you with the ability to set the default logging level to something like Warning or Error to reduce the mass of Log entries that might otherwise be produced but equally to turn on more verbose logging when it would be really useful to glean more information about what is actually going on.
+
+The second benefit comes from the multitude of ways that serilog allows you to actually configure the output, especially if you start to add some of the additional Nuget packages that have been created to do just that.
+
+#### Adding the appsettings.json
+
+The GitHub solution that is demonstrating this has a simple .Net 6 console App to show show off the Metalama class library. We need to configure that to read the the external file. To make that possible I added the `Microsoft.Extensions.Hosting` NuGet Package along with the `Serilog.Extensions.Hosting` and `Serilog.Settings.Configuration` packages.
+
+This will allow me to add the following code to the static Main entrypoint.
+
+```c#
+var builder = new ConfigurationBuilder();
+BuildConfig(builder);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Build())
+    .CreateLogger();
+
+```
+
+which references the following, also added to the `Program.cs` file.
+
+```c#
+static void BuildConfig(IConfigurationBuilder builder)
+{
+    builder.SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile(
+        $"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json",
+        optional: true)
+    .AddEnvironmentVariables();
+}
+```
+
+Essentially what's happening here is that the `BuildConfig` method is determining where the application resides and then sets about adding the main `appsettings.json` file to the configuration.
+
+> Note that you are not restricted to a single app settings file which opens up the possibility to configure things differently for different environments.
+
+With the settings file having been made known to the ConfigurationBuilder it's possible to then go on and create the Logger. Currently that will still use the default Microsoft Logger. We can now change that. Add the following below the code you added to the static Main method.
+
+```c#
+var host = Host.CreateDefaultBuilder()
+               .ConfigureServices(
+                services =>
+                    {
+                        services.AddTransient<Calculator>();
+                    })
+                .UseSerilog()
+                .Build();
+
+```
+
+Now all we need is the Json file itself.
+
+Add a new appsettings.json file to the project. in it's properties set the `Copy to Output Directory` to `Copy always`
+
+#### The Serilog section in the 'appsettings.json' file
+
+A very basic Serilog section will have the following elements.
+
+```json
+{
+"Serilog":
+ {
+    "Using":[],
+    "MinimumLevel": ,
+    "WriteTo":[],
+ }
+}
+```
+
+To get a full appreciation of just what you can do with this it is well worth consulting the [Serilog Documentation](https://github.com/serilog/serilog/wiki/Configuration-Basics). This is a complex topic and as aluded to earlier there are a myriad of ways that Serilog can be configured. My best advice is to experiment and find what works best for you. Just bear in mind that you can create different configurations for each sink that you write to.
