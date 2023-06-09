@@ -28,6 +28,13 @@
     - [Configuring Serilog via 'appsettings.json'](#configuring-serilog-via-appsettingsjson)
       - [Adding the appsettings.json](#adding-the-appsettingsjson)
       - [The Serilog section in the 'appsettings.json' file](#the-serilog-section-in-the-appsettingsjson-file)
+  - [Putting everything together](#putting-everything-together)
+    - [Log Guard](#log-guard)
+    - [Nuget](#nuget)
+    - [Testing](#testing)
+    - [Documentation](#documentation)
+    - [Versioning](#versioning)
+    - [A final note about Licencing](#a-final-note-about-licencing)
 
 ## What is Logging
 
@@ -1196,3 +1203,45 @@ A very basic Serilog section will have the following elements.
 ```
 
 To get a full appreciation of just what you can do with this it is well worth consulting the [Serilog Documentation](https://github.com/serilog/serilog/wiki/Configuration-Basics). This is a complex topic and as aluded to earlier there are a myriad of ways that Serilog can be configured. My best advice is to experiment and find what works best for you. Just bear in mind that you can create different configurations for each sink that you write to.
+
+## Putting everything together
+
+Finally we can put what we've learned to use and create something useful.
+
+### Log Guard
+
+It is conceivable that a recursive loop could be triggered in certain logging scenarios which is something that should be avoided so the actual finished package also contains a recursion guard
+
+### Nuget
+
+VtlSoftware>Logging is available on [Nuget.](https://www.nuget.org/packages/VtlSoftware.Logging/)
+
+It can be installed via the .Net Cli with the following command
+
+```
+dotnet add package VtlSoftware.Logging --version <xxx>
+```
+
+Or Via the Nuget package manager with the following command.
+
+```
+NuGet\Install-Package VtlSoftware.Logging -Version <xxx>
+```
+
+### Testing
+
+VtlSoftware.Logging is also backed with it's own public GitHub repository. Within the GitHub repository you'll find not only the VtlSoftware.Logging project that is the substance of the Nuget Package but you'll also find a test project as well that tests as many of the differing ways that the aspects might be applied as I could think of.
+
+I can't stress highly enough the importance of testing your aspects. Testing the logging project exposed a flaw that I had omitted to cater for. You can find out more about how to test aspects in the [Metalama Documentation](https://doc.metalama.net/conceptual/aspects/testing)
+
+### Documentation
+
+The Nuget package is also fully documented. Good documentation is a subject I'm passionate about so it behoves me to try and make sure that I follow my own advice in this regard.
+
+### Versioning
+
+The plan is that the logging library will mirror the version numbers of the latest available GA release of Metalama itself.
+
+### A final note about Licencing
+
+It should be possible to use this library free of charge. It should consume no more that one credit and the Free edition of Metalama allows you up to three credits.
